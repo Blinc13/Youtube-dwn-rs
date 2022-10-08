@@ -1,5 +1,6 @@
 [package]
 name = "youtube_downloader"
+description = "Simple youtube video downloader on rust"
 version = "0.1.0"
 edition = "2021"
 
