@@ -8,19 +8,19 @@ use youtube_downloader::parser::youtube::YoutubeHtmlParser;
 
 fn main() {
     let youtube_watch = SingleRequest::get("https://www.youtube.com/watch?v=WuGcoPOT94c").unwrap();
-    let video_formats = YoutubeHtmlParser::new(&youtube_watch.response_as_str()).unwrap();
+    let video_info = YoutubeHtmlParser::new(&youtube_watch.response_as_str()).unwrap();
 
 
-    let available_qualities = video_formats.get_available_qualities();
+    let formats = video_info.get_video_formats();
+    let format = formats.first().unwrap();
 
+    println!("{:?}", video_info.get_video_meta());  // Debug
+    println!("{:?}", format);                       //
 
-    let quality = *available_qualities.first().unwrap();
+    let file_name = format!("video.{}", format.file_format);
+    let mut file = File::create(file_name).unwrap();
 
-    let file_format = video_formats.get_file_format_by_quality(quality).unwrap();
-    let file_url = video_formats.get_url_by_quality(quality).unwrap();
+    let response = SingleRequest::get(format.url).unwrap();
 
-    let mut file = File::create(format!("video.{}", file_format)).unwrap();
-    let video_data = SingleRequest::get(file_url).unwrap();
-
-    file.write_all(video_data.response_as_u8()).unwrap();
+    file.write_all(response.response_as_u8()).unwrap();
 }
