@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use curl::{easy::Easy, Error};
+use curl::easy::WriteError;
 
 const CURL_EXPECT_MESSAGE: &str = "Failed to set curl parameters";
 
@@ -95,13 +96,28 @@ impl StreamRequest {
     pub fn execute(&mut self) -> Result<(), ()> {
         let mut response = Vec::new();
 
+        self.execute_with_custom_pred(| buf | {
+            response.extend_from_slice(buf);
+
+            Ok(buf.len())
+        })?;
+
+        self.response = Some(response);
+
+        Ok(())
+    }
+
+    pub fn execute_with_custom_pred<T>(&mut self, mut pred: T) -> Result<(), ()>
+        where T: FnMut(&[u8]) -> Result<usize, ()>
+    {
         {
             let mut transfer = self.easy.transfer();
 
             transfer.write_function(| buf | {
-                response.extend_from_slice(buf);
-
-                Ok(buf.len())
+                match pred(buf) {
+                    Ok(readied) => Ok(readied),
+                    Err(_) => Err(WriteError::Pause)
+                }
             }).expect(CURL_EXPECT_MESSAGE);
 
             match transfer.perform() {
@@ -109,8 +125,6 @@ impl StreamRequest {
                 Err(_) => return Err(())
             }
         }
-
-        self.response = Some(response);
 
         Ok(())
     }
