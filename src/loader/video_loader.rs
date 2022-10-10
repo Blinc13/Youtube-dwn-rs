@@ -1,6 +1,6 @@
+//Idea: add cache to minimize ram usage
 use std::fs::File;
 use std::io::Write;
-use std::sync::Arc;
 use std::thread;
 use crate::{loader::http_getter::{
     StreamRequest,
@@ -89,7 +89,7 @@ impl<'a> Loader<'a> {
         for x in workers {
             let data = x.join().unwrap();
 
-            file.write_all(&data);
+            file.write_all(&data).unwrap();
         }
 
         /*
@@ -118,7 +118,7 @@ impl<'a> Loader<'a> {
 }
 
 fn format_url(url: &str, range: (usize, usize)) -> String {
-    format!("{}&range={}-{}", url, range.0, range.1)
+    format!("{}&range={}-{}", url, range.0, range.1 - 1)
 }
 
 fn calculate_file_range(part_size: usize, part_number: usize) -> (usize, usize) {
