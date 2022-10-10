@@ -14,10 +14,10 @@ fn main() {
 
 
     let formats = video_info.get_video_formats();
-    let format = formats.first().unwrap();
+    let format = &formats[0];
 
     println!("{:?}", video_info.get_video_meta());  // Debug
     println!("{:?}", format);                       //
 
-    Loader::new(format).start();
+    Loader::new(format).start(3);
 }

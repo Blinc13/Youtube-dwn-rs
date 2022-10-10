@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Write;
 use std::sync::Arc;
 use std::thread;
 use crate::{loader::http_getter::{
@@ -45,17 +47,52 @@ impl<'a> Loader<'a> {
             panic!("Invalid part number!");
         }
 
-        let range = self.calculate_file_range(part_number);
+        let range = calculate_file_range(self.part_size, part_number);
 
-        self.request.set_url(&self.format_url(range));
+        self.request.set_url(&format_url(self.format.url, range));
         self.request.execute().unwrap();
 
         self.request.response_as_u8()
     }
 
-    pub fn start(mut self) {
-        let format = Arc::new(self.format);
+    pub fn start(mut self, workers_count: usize) {
+        let parts_for_worker = self.parts_count / workers_count;
 
+        let workers: Vec<_> = (0..workers_count).map(| id | {
+            let part_size = self.part_size;
+
+            let first_part_id = parts_for_worker * id;
+            let last_part_id = parts_for_worker * (id + 1);
+
+            let url = self.format.url.to_string();
+
+            move || {
+                let mut out = Vec::new();
+                let mut stream = StreamRequest::new();
+
+                for part_number in first_part_id..last_part_id {
+                    stream.set_url(&format_url(&url, calculate_file_range(part_size, part_number)));
+
+                    stream.execute().unwrap();
+
+                    out.extend_from_slice(stream.response_as_u8());
+
+                    println!("Id: {id} Fragment {part_number} downloaded"); // Debug
+                }
+
+                out
+            }
+        }).map(| worker | thread::spawn(worker)).collect();
+
+        let mut file = File::create("video.mp4").unwrap();
+
+        for x in workers {
+            let data = x.join().unwrap();
+
+            file.write_all(&data);
+        }
+
+        /*
         for part_number in (0..self.parts_count).step_by(2) {
             println!("Downloading fragment number {} from {}", part_number + 1, self.parts_count); // Debug
 
@@ -76,18 +113,17 @@ impl<'a> Loader<'a> {
                      String::from_utf8_lossy(&first_part),
                     String::from_utf8_lossy(&second_part)
             ); // Debug
-        }
+        }*/
     }
+}
 
+fn format_url(url: &str, range: (usize, usize)) -> String {
+    format!("{}&range={}-{}", url, range.0, range.1)
+}
 
-    fn format_url(&self, range: (usize, usize)) -> String {
-        format!("{}&range={}-{}", self.format.url, range.0, range.1)
-    }
-
-    fn calculate_file_range(&self, part_number: usize) -> (usize, usize) {
-        (
-            part_number * self.part_size,
-            (part_number + 1) * self.part_size
-        )
-    }
+fn calculate_file_range(part_size: usize, part_number: usize) -> (usize, usize) {
+    (
+        part_number * part_size,
+        (part_number + 1) * part_size
+    )
 }
