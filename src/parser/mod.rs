@@ -33,3 +33,8 @@ pub struct Format<'a> {
 
     pub size: (u16, u16)
 }
+
+pub trait Parser {
+    fn get_video_meta(&self) -> VideoMeta;
+    fn get_video_formats(&self) -> Vec<Format>;
+}

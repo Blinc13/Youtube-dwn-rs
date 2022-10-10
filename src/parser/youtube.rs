@@ -1,6 +1,6 @@
 //TODO: Add support for adaptiveFormats
 use json::JsonValue;
-use crate::parser::{Format, VideoMeta, VideoMetaBuilder, FormatBuilder};
+use crate::parser::{Format, VideoMeta, VideoMetaBuilder, FormatBuilder, Parser};
 
 ///# Description
 ///This structure parses json with formats
@@ -17,7 +17,7 @@ impl YoutubeHtmlParser {
     pub fn new(content: &str) -> Result<Self, ()> {
         let json = extract_context_settings_json_from_string(content);
 
-        Ok (
+        Ok(
             Self {
                 json: match json::parse(json) {
                     Ok(json) => json,
@@ -26,8 +26,10 @@ impl YoutubeHtmlParser {
             }
         )
     }
+}
 
-    pub fn get_video_meta(&self) -> VideoMeta {
+impl Parser for YoutubeHtmlParser {
+    fn get_video_meta(&self) -> VideoMeta {
         let video_details = &self.json["videoDetails"];
 
         let length = video_details["lengthSeconds"].as_str().unwrap();
@@ -49,7 +51,7 @@ impl YoutubeHtmlParser {
     }
 
 
-    pub fn get_video_formats(&self) -> Vec<Format> {
+    fn get_video_formats(&self) -> Vec<Format> {
         let formats = &self.json["streamingData"]["formats"];
 
         formats.members().map(| format_json | {
@@ -89,6 +91,7 @@ impl YoutubeHtmlParser {
         }).collect()
     }
 }
+
 
 fn extract_context_settings_json_from_string(string: &str) -> &str {
     let beg = string.find("responseContext").unwrap() - 2;
