@@ -1,5 +1,3 @@
-use std::fs::File;
-use std::io::Write;
 use crate::{
     loader::http_getter::{
         StreamRequest,
@@ -10,48 +8,58 @@ use crate::{
 
 pub struct Loader<'a> {
     request: StreamRequest,
-    format: &'a Format<'a>
+    format: &'a Format<'a>,
+
+    part_len: f64,
+    part_size: usize,
+    parts_count: usize
 }
 
 impl<'a> Loader<'a> {
     pub fn new(format: &'a Format<'a>) -> Self {
-        Self {
-            request: StreamRequest::new(),
-            format
-        }
+        Self::new_with_parts_count(format, format.duration_ms / 1000 / 5)
     }
 
-    pub fn start(mut self, parts_count: usize) {
+    pub fn new_with_parts_count(format: &'a Format<'a>, parts_count: usize) -> Self {
         if parts_count == 0 {
             panic!("Invalid parts_count value");
         }
 
-        let duration_sec = (self.format.duration_ms as f64) / 1000.0;
+        let duration_sec = (format.duration_ms as f64) / 1000.0;
 
         let part_len = duration_sec / parts_count as f64;
-        let part_size = (part_len * self.format.bitrate as f64).trunc() as usize;
+        let part_size = (part_len * format.bitrate as f64).trunc() as usize;
 
-        println!("Part len - {part_len}, part size - {part_size}, duration - {duration_sec}"); // Debug
+        Self {
+            request: StreamRequest::new(),
+            format,
+            part_len,
+            part_size,
+            parts_count
+        }
+    }
 
-        for x in 0..parts_count+1 {
-            println!("Downloading {x} part"); // Debug
+    pub fn get_fragment(&mut self, fragment_number: usize) -> &[u8] {
+        if fragment_number >= self.parts_count {
+            panic!("Invalid frament number!");
+        }
 
-            let current_pos = x * part_size;
-            let next_pos = (x + 1) * part_size;
+        let fragment_beg = fragment_number * self.part_size;
+        let fragment_end = (fragment_number + 1) * self.part_size;
 
-            println!("{current_pos}-{next_pos}"); // Debug
+        println!("{fragment_beg} - {fragment_end}");
 
-            self.request.set_url(&format!("{}&range={current_pos}-{next_pos}", self.format.url)); // Needs ti be rewritten
+        self.request.set_url(&format!("{}&range={fragment_beg}-{fragment_end}", self.format.url));
+        self.request.execute().unwrap();
 
-            let mut len = 0;
+        self.request.response_as_u8()
+    }
 
-            while len == 0 {
-                self.request.execute().unwrap();
+    pub fn start(mut self) {
+        for fragment_number in 0..self.parts_count {
+            let fragment = self.get_fragment(fragment_number);
 
-                len = self.request.response_as_u8().len();
-            }
-
-            println!("{}", self.request.response_as_str());
+            println!("Fragment - {}", String::from_utf8_lossy(fragment)); // Debug
         }
     }
 }

@@ -16,5 +16,5 @@ fn main() {
     println!("{:?}", video_info.get_video_meta());  // Debug
     println!("{:?}", format);                       //
 
-    Loader::new(format).start(50);
+    Loader::new(format).start();
 }
