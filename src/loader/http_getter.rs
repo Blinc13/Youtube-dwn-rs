@@ -131,10 +131,17 @@ impl StreamRequest {
 }
 
 
+
 pub trait ResponseAs {
     fn response_as_str(&self) -> Cow<str>;
     fn response_as_u8(&self) -> &[u8];
 }
+
+pub trait ResponseOwned {
+    fn response(self) -> Vec<u8>;
+}
+
+
 
 impl ResponseAs for SingleRequest {
     fn response_as_str(&self) -> Cow<str> {
@@ -146,6 +153,13 @@ impl ResponseAs for SingleRequest {
     }
 }
 
+impl ResponseOwned for SingleRequest {
+    fn response(self) -> Vec<u8> {
+        self.response
+    }
+}
+
+
 impl ResponseAs for StreamRequest {
     fn response_as_str(&self) -> Cow<str> {
         String::from_utf8_lossy(self.response.as_ref().unwrap())
@@ -153,5 +167,11 @@ impl ResponseAs for StreamRequest {
 
     fn response_as_u8(&self) -> &[u8] {
         self.response.as_ref().unwrap()
+    }
+}
+
+impl ResponseOwned for StreamRequest {
+    fn response(self) -> Vec<u8> {
+        self.response.unwrap()
     }
 }

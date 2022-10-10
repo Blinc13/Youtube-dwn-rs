@@ -1,10 +1,11 @@
-use crate::{
-    loader::http_getter::{
-        StreamRequest,
-        ResponseAs
-    },
-    parser::Format
-};
+use std::sync::Arc;
+use std::thread;
+use crate::{loader::http_getter::{
+    StreamRequest,
+    ResponseOwned,
+    ResponseAs
+}, parser::Format, SingleRequest};
+
 
 pub struct Loader<'a> {
     request: StreamRequest,
@@ -44,22 +45,49 @@ impl<'a> Loader<'a> {
             panic!("Invalid part number!");
         }
 
-        let part_beg = part_number * self.part_size;
-        let part_end = (part_number + 1) * self.part_size;
+        let range = self.calculate_file_range(part_number);
 
-        self.request.set_url(&format!("{}&range={part_beg}-{part_end}", self.format.url));
+        self.request.set_url(&self.format_url(range));
         self.request.execute().unwrap();
 
         self.request.response_as_u8()
     }
 
     pub fn start(mut self) {
-        for part_number in 0..self.parts_count {
+        let format = Arc::new(self.format);
+
+        for part_number in (0..self.parts_count).step_by(2) {
             println!("Downloading fragment number {} from {}", part_number + 1, self.parts_count); // Debug
 
-            let part = self.get_fragment(part_number);
+            let first_url = self.format_url(self.calculate_file_range(part_number));
+            let second_url = self.format_url(self.calculate_file_range(part_number + 1));
 
-            println!("{}", String::from_utf8_lossy(part)); // Debug
+            let first_part = thread::spawn(move || {
+                SingleRequest::get(&first_url).unwrap().response()
+            });
+            let second_part = thread::spawn(move || {
+                SingleRequest::get(&second_url).unwrap().response()
+            });
+
+            let first_part = first_part.join().unwrap();
+            let second_part = second_part.join().unwrap();
+
+            println!("{}{}",
+                     String::from_utf8_lossy(&first_part),
+                    String::from_utf8_lossy(&second_part)
+            ); // Debug
         }
+    }
+
+
+    fn format_url(&self, range: (usize, usize)) -> String {
+        format!("{}&range={}-{}", self.format.url, range.0, range.1)
+    }
+
+    fn calculate_file_range(&self, part_number: usize) -> (usize, usize) {
+        (
+            part_number * self.part_size,
+            (part_number + 1) * self.part_size
+        )
     }
 }

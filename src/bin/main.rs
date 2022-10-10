@@ -3,7 +3,10 @@ use youtube_downloader::loader::{
     ResponseAs,
     video_loader::Loader
 };
-use youtube_downloader::parser::youtube::YoutubeHtmlParser;
+use youtube_downloader::parser::{
+    youtube::YoutubeHtmlParser,
+    Parser
+};
 
 fn main() {
     let youtube_watch = SingleRequest::get("https://www.youtube.com/watch?v=starRhGZa6k").unwrap();
