@@ -28,7 +28,7 @@ impl<'a> Loader<'a> {
         let duration_sec = (format.duration_ms as f64) / 1000.0;
 
         let part_len = duration_sec / parts_count as f64;
-        let part_size = (part_len * format.bitrate as f64).trunc() as usize;
+        let part_size = ((part_len * format.bitrate as f64) / 8.0) as usize;
 
         Self {
             request: StreamRequest::new(),
@@ -39,27 +39,27 @@ impl<'a> Loader<'a> {
         }
     }
 
-    pub fn get_fragment(&mut self, fragment_number: usize) -> &[u8] {
-        if fragment_number >= self.parts_count {
-            panic!("Invalid frament number!");
+    pub fn get_fragment(&mut self, part_number: usize) -> &[u8] {
+        if part_number >= self.parts_count {
+            panic!("Invalid part number!");
         }
 
-        let fragment_beg = fragment_number * self.part_size;
-        let fragment_end = (fragment_number + 1) * self.part_size;
+        let part_beg = part_number * self.part_size;
+        let part_end = (part_number + 1) * self.part_size;
 
-        println!("{fragment_beg} - {fragment_end}");
-
-        self.request.set_url(&format!("{}&range={fragment_beg}-{fragment_end}", self.format.url));
+        self.request.set_url(&format!("{}&range={part_beg}-{part_end}", self.format.url));
         self.request.execute().unwrap();
 
         self.request.response_as_u8()
     }
 
     pub fn start(mut self) {
-        for fragment_number in 0..self.parts_count {
-            let fragment = self.get_fragment(fragment_number);
+        for part_number in 0..self.parts_count {
+            println!("Downloading fragment number {} from {}", part_number + 1, self.parts_count); // Debug
 
-            println!("Fragment - {}", String::from_utf8_lossy(fragment)); // Debug
+            let part = self.get_fragment(part_number);
+
+            println!("{}", String::from_utf8_lossy(part)); // Debug
         }
     }
 }
