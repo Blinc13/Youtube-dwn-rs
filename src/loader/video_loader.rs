@@ -42,19 +42,7 @@ impl<'a> Loader<'a> {
         }
     }
 
-    pub fn get_fragment(&mut self, part_number: usize) -> &[u8] {
-        if part_number >= self.parts_count {
-            panic!("Invalid part number!");
-        }
-
-        let range = calculate_file_range(self.part_size, part_number);
-
-        self.request.set_url(&format_url(self.format.url, range));
-        self.request.execute().unwrap();
-
-        self.request.response_as_u8()
-    }
-
+    // TODO: Refactor
     pub fn start(mut self, workers_count: usize) {
         let parts_for_worker = self.parts_count / workers_count;
 
@@ -73,11 +61,11 @@ impl<'a> Loader<'a> {
                 for part_number in first_part_id..last_part_id {
                     stream.set_url(&format_url(&url, calculate_file_range(part_size, part_number)));
 
-                    stream.execute().unwrap();
+                    stream.execute_with_custom_pred(| buf | {
+                        out.extend_from_slice(buf);
 
-                    out.extend_from_slice(stream.response_as_u8());
-
-                    println!("Id: {id} Fragment {part_number} downloaded"); // Debug
+                        Ok(buf.len())
+                    }).unwrap();
                 }
 
                 out
