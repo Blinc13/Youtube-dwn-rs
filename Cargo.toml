@@ -1,8 +1,17 @@
 [package]
-name = "yt-down"
-description = "Simple youtube video downloader on rust with curl"
 version = "0.1.0"
 edition = "2021"
+
+name = "yt-down"
+description = "Simple youtube video downloader on rust with curl"
+keywords = ["Download", "Youtube"]
+categories = ["multimedia"]
+authors = ["Blinc"]
+
+readme = "README.md"
+license = "MIT"
+
+repository = "https://github.com/Blinc13/Youtube-dwn-rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
