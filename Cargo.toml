@@ -1,6 +1,6 @@
 [package]
-name = "youtube_downloader"
-description = "Simple youtube video downloader on rust"
+name = "yt-down"
+description = "Simple youtube video downloader on rust with curl"
 version = "0.1.0"
 edition = "2021"
 

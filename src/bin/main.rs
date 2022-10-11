@@ -1,21 +1,24 @@
 use std::fs::File;
 use std::io::Write;
-use youtube_downloader::{
+
+use clap::Parser as ClapParser;
+
+use yt_down::{
     args::{
         Args,
         Command
     },
     parser::{
         Parser,
-        youtube::YoutubeHtmlParser
+        youtube::YoutubeHtmlParser,
+        Format
     },
     SingleRequest,
     loader::video_loader::Loader,
     ResponseAs,
     generate_file_name
 };
-use clap::Parser as ClapParser;
-use youtube_downloader::parser::Format;
+
 
 fn main() {
     let args = Args::parse();
