@@ -90,10 +90,12 @@ impl<'a> Loader<'a> {
     }
 }
 
+#[inline]
 fn format_url(url: &str, range: (usize, usize)) -> String {
     format!("{}&range={}-{}", url, range.0, range.1 - 1)
 }
 
+#[inline]
 fn calculate_file_range(part_size: usize, part_number: usize) -> (usize, usize) {
     (
         part_number * part_size,
