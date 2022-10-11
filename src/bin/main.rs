@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Write;
+use youtube_downloader::generate_file_name;
 use youtube_downloader::loader::{
     SingleRequest,
     ResponseAs,
@@ -16,15 +17,14 @@ fn main() {
 
 
     let formats = video_info.get_video_formats();
-    let format = &formats[0];
 
-    println!("{:?}", video_info.get_video_meta());  // Debug
-    println!("{:?}", format);                       //
+    let format = &formats[1];
+    let meta = video_info.get_video_meta();
 
-    let mut file = File::create("video.mp4").unwrap();
+    let mut file = File::create(generate_file_name(&meta, format)).unwrap();
 
     Loader::new(format)
-        .download_by_workers_count(9, &mut move | buf |
-            file.write_all(&buf).unwrap()
-        );
+        .download_by_workers_count(9, &mut move | buf | {
+            file.write_all(&buf).unwrap();
+        });
 }
