@@ -1,14 +1,19 @@
-use clap::Parser;
+use clap::*;
 
 #[derive(Parser)]
 #[clap(about, author, version)]
 pub struct Args {
     pub url: String,
 
-    #[clap(short, long)]
-    pub format: String,
+    #[command(subcommand)]
+    pub command: Command
+}
 
-    #[clap(long)]
-    /// Prints every possible format for video
-    pub show_formats: bool
+#[derive(Subcommand)]
+pub enum Command {
+    Download {
+        format: String,
+        workers_count: Option<usize>
+    },
+    Meta
 }

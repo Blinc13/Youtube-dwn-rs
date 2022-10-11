@@ -1,7 +1,10 @@
 use std::fs::File;
 use std::io::Write;
 use youtube_downloader::{
-    Args,
+    args::{
+        Args,
+        Command
+    },
     parser::{
         Parser,
         youtube::YoutubeHtmlParser
@@ -12,35 +15,40 @@ use youtube_downloader::{
     generate_file_name
 };
 use clap::Parser as ClapParser;
+use youtube_downloader::parser::Format;
 
 fn main() {
     let args = Args::parse();
 
-    let page = SingleRequest::get(&args.url).expect("Failed to execute request");
-    let parser = YoutubeHtmlParser::new(&page.response_as_str()).expect("Failed to parse page");
+    let page = SingleRequest::get(&args.url).expect("Invalid url");
+    let parser = YoutubeHtmlParser::new(&page.response_as_str()).unwrap();
+
 
     let formats = parser.get_video_formats();
     let meta = parser.get_video_meta();
 
-    if args.show_formats {
-        println!("Formats for \"{}\":\n", meta.name);
 
-        for format in formats {
-            println!("  {}", format.quality_on_page_label);
+    match args.command {
+        Command::Download{format, workers_count} => {
+            let format = find_format(&formats, &format).expect("Format not found");
+            let workers_count = workers_count.unwrap_or(10);
+
+            let mut file = File::create(generate_file_name(&meta, format)).unwrap();
+
+            Loader::new(format)
+                .download_by_workers_count(workers_count, &mut move | buf |
+                    file.write_all(&buf).unwrap()
+                )
         }
-
-        return;
+        Command::Meta => {
+            println!("{:?}", meta); // Temporal solution
+        }
     }
+}
 
-    let format = formats.iter().find(| format | {
-        format.quality_on_page_label == args.format
-    }).expect("Format not found");
-
-
-    let mut file = File::create(generate_file_name(&meta, format)).unwrap();
-
-    Loader::new(format)
-        .download_by_workers_count(9, &mut move | buf | {
-            file.write_all(&buf).unwrap();
-        });
+fn find_format<'a>(formats: &'a [Format], name: &'a str) -> Option<&'a Format<'a>> {
+    formats.iter()
+        .find(| format | {
+            format.quality_on_page_label == name
+        })
 }
