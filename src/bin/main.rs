@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Write;
 use youtube_downloader::loader::{
     SingleRequest,
     ResponseAs,
@@ -19,5 +21,10 @@ fn main() {
     println!("{:?}", video_info.get_video_meta());  // Debug
     println!("{:?}", format);                       //
 
-    Loader::new(format).start(3);
+    let mut file = File::create("video.mp4").unwrap();
+
+    Loader::new(format)
+        .download_by_workers_count(9, &mut move | buf |
+            file.write_all(&buf).unwrap()
+        );
 }
