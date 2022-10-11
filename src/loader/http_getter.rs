@@ -1,6 +1,6 @@
 //TODO: Add something like curl::multi for multithreaded requests
 use std::borrow::Cow;
-use curl::{easy::Easy, Error};
+use curl::easy::Easy;
 use curl::easy::WriteError;
 
 const CURL_EXPECT_MESSAGE: &str = "Failed to set curl parameters";

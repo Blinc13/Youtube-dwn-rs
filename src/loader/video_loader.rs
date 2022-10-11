@@ -1,7 +1,4 @@
 //Idea: add cache to minimize ram usage
-use std::fs::File;
-use std::io::Write;
-
 use std::thread;
 use crate::{
     loader::http_getter::StreamRequest,
