@@ -62,6 +62,14 @@ impl<'a> Loader<'a> {
         }
     }
 
+    pub fn get_parts_count(&self) -> usize {
+        self.parts_count
+    }
+
+    pub fn get_part_size(&self) -> usize {
+        self.part_size
+    }
+
 
     fn construct_and_spawn(&self, first_part_number: usize, last_part_number: usize) -> thread::JoinHandle<Vec<u8>> {
         thread::spawn(self.construct_worker(first_part_number, last_part_number))

@@ -31,14 +31,17 @@ fn main() {
     match args.command {
         Command::Download{format, workers_count} => {
             let format = find_format(&formats, &format).expect("Format not found");
-            let workers_count = workers_count.unwrap_or(10);
+
+            let loader = Loader::new(format);
+
+            let workers_count = workers_count.unwrap_or(loader.get_parts_count());
+
 
             let mut file = File::create(generate_file_name(&meta, format)).unwrap();
 
-            Loader::new(format)
-                .download_by_workers_count(workers_count, &mut move | buf |
-                    file.write_all(&buf).unwrap()
-                )
+            loader.download_by_workers_count(workers_count, &mut | buf |
+                file.write_all(&buf).unwrap()
+            )
         }
         Command::Meta => {
             println!("{:?}", meta); // Temporal solution
