@@ -1,7 +1,10 @@
-use std::fs::File;
-use std::io::Write;
-
 use clap::Parser as ClapParser;
+
+use std::{
+    fs::File,
+    io::Write,
+    process::exit
+};
 
 use yt_down::{
     args::{
@@ -33,7 +36,18 @@ fn main() {
 
     match args.command {
         Command::Download{format, workers_count} => {
-            let format = find_format(&formats, &format).expect("Format not found");
+            let format = match find_format(&formats, &format) {
+                Some(f) => f,
+                None => {
+                    println!("No format found!\nAvailable formats:");
+
+                    for format in formats {
+                        println!("\t{}", format.quality_on_page_label);
+                    }
+
+                    exit(1);
+                }
+            };
 
             let loader = Loader::new(format);
 
@@ -47,7 +61,7 @@ fn main() {
             )
         }
         Command::Meta => {
-            println!("{:?}", meta); // Temporal solution
+            println!("{}", meta);
         }
     }
 }

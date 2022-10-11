@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 pub use youtube::YoutubeHtmlParser;
 
 pub mod youtube;
@@ -32,6 +33,14 @@ pub struct Format<'a> {
     pub fps: usize,
 
     pub size: (u16, u16)
+}
+
+impl Display for VideoMeta<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{}\n\n", self.name)?;
+        writeln!(f, "{}\n\n", self.description)?;
+        writeln!(f, "{}\t\t\t{} views", self.author, self.views_count)
+    }
 }
 
 pub trait Parser {
