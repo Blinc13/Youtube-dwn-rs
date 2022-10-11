@@ -1,25 +1,41 @@
 use std::fs::File;
 use std::io::Write;
-use youtube_downloader::generate_file_name;
-use youtube_downloader::loader::{
+use youtube_downloader::{
+    Args,
+    parser::{
+        Parser,
+        youtube::YoutubeHtmlParser
+    },
     SingleRequest,
+    loader::video_loader::Loader,
     ResponseAs,
-    video_loader::Loader
+    generate_file_name
 };
-use youtube_downloader::parser::{
-    youtube::YoutubeHtmlParser,
-    Parser
-};
+use clap::Parser as ClapParser;
 
 fn main() {
-    let youtube_watch = SingleRequest::get("https://www.youtube.com/watch?v=starRhGZa6k").unwrap();
-    let video_info = YoutubeHtmlParser::new(&youtube_watch.response_as_str()).unwrap();
+    let args = Args::parse();
 
+    let page = SingleRequest::get(&args.url).expect("Failed to execute request");
+    let parser = YoutubeHtmlParser::new(&page.response_as_str()).expect("Failed to parse page");
 
-    let formats = video_info.get_video_formats();
+    let formats = parser.get_video_formats();
+    let meta = parser.get_video_meta();
 
-    let format = &formats[1];
-    let meta = video_info.get_video_meta();
+    if args.show_formats {
+        println!("Formats for \"{}\":\n", meta.name);
+
+        for format in formats {
+            println!("  {}", format.quality_on_page_label);
+        }
+
+        return;
+    }
+
+    let format = formats.iter().find(| format | {
+        format.quality_on_page_label == args.format
+    }).expect("Format not found");
+
 
     let mut file = File::create(generate_file_name(&meta, format)).unwrap();
 

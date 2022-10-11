@@ -1,8 +1,10 @@
 pub use loader::{SingleRequest, StreamRequest, ResponseAs};
 pub use parser::YoutubeHtmlParser;
+pub use args::Args;
 
 pub mod loader;
 pub mod parser;
+pub mod args;
 
 
 use parser::{VideoMeta, Format};
